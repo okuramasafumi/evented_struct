@@ -1,5 +1,15 @@
+---
+inherit_gem:
+  rubocop-sensible: 'config/rubocop.yml'
+
+require:
+  - rubocop-minitest
+  - rubocop-performance
+  - rubocop-rake
+
 AllCops:
   TargetRubyVersion: 2.6
+  NewCops: enable
 
 Style/StringLiterals:
   Enabled: true

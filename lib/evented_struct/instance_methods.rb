@@ -10,7 +10,11 @@ class EventedStruct
       super()
       @attributes = attributes.to_h
       @events = @attributes.each_with_object([]) do |(k, v), array|
-        array << Event.new(type: :add, payload: { k => v })
+        event = Event.new(key: k, type: :add, payload: { k => v })
+        array << event
+        self.class.subscriptions.each do |subscription|
+          subscription.publish_if_match(event)
+        end
       end
     end
 
@@ -28,7 +32,11 @@ class EventedStruct
     end
 
     def []=(key, value)
-      @events << Event.new(type: :change, payload: { key.to_sym => { from: self[key], to: value } })
+      event = Event.new(key: key, type: :change, payload: { key.to_sym => { from: self[key], to: value } })
+      @events << event
+      self.class.subscriptions.each do |subscription|
+        subscription.publish_if_match(event)
+      end
       @attributes[key] = value
     end
 

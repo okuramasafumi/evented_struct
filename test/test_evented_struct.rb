@@ -26,4 +26,41 @@ class TestEventedStruct < Minitest::Test
     assert_equal :change, event.type
     assert_equal({ name: { from: "Test", to: "New" } }, event.payload)
   end
+
+  def test_it_allows_to_publish_and_subscribe_events_with_specified_type_and_key
+    store = []
+    struct = EventedStruct.new(:foo, :bar)
+    struct.subscribe(type: :change, key: :foo) do |_key, _type, payload|
+      store << payload
+    end
+    data = struct.new(foo: "Foo", bar: 42)
+    data.foo = "FOO!" # This should be subscribed
+    data.bar = 1 # This should NOT be subscribed
+    assert_equal [{ foo: { from: "Foo", to: "FOO!" } }], store
+  end
+
+  def test_it_allows_to_publish_and_subscribe_events_with_all_key_and_type
+    store = []
+    struct = EventedStruct.new(:foo, :bar)
+    struct.subscribe do |key, type, _payload|
+      store << [key, type]
+    end
+    data = struct.new(foo: "Foo", bar: 42)
+    data.foo = "FOO!" # This should be subscribed
+    data.bar = 1 # This should be subscribed
+    assert_equal [[:foo, :add], [:bar, :add], [:foo, :change], [:bar, :change]], store
+  end
+
+  def test_it_allows_to_reset_subscription
+    store = []
+    struct = EventedStruct.new(:foo, :bar)
+    struct.subscribe(type: :change, key: :foo) do |_key, _type, payload|
+      store << payload
+    end
+    struct.reset_subscription!
+    data = struct.new(foo: "Foo", bar: 42)
+    data.foo = "FOO!"
+    data.bar = 1
+    assert_empty store
+  end
 end
